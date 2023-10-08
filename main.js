@@ -192,7 +192,7 @@ function CreateSurfaceData(r,c,d,gamma_zero)
         }
     }
 
-    for(let i=0; i<alpha_max; i+=alpha_max/30) {
+    for(let i=0; i<alpha_max + alpha_max/10; i+=alpha_max/30) {
         count_vertical_steps = 0;
         for(let j = 0; j < t_max+t_max/10; j+=t_max/10){
             vertexList.push( x(j, deg2rad(i), deg2rad(0))
