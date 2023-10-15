@@ -14,29 +14,42 @@
     <h2>Monge Surface with a Cylindrical Directrix Surface and with a Sinusoid as Meridian</h2>
 
     <div>
-        <label for="rSlider">Радіус (r):</label>
-        <input type="range" id="rSlider" min="0" max="1" step="0.01" value="0.25">
-        <span id="rValue_span">0.25</span>
-    </div>
-    
-    <div>
-        <label for="cSlider">Параметр (c):</label>
-        <input type="range" id="cSlider" min="0" max="2" step="0.01" value="1">
-        <span id="cValue_span">1</span>
-    </div>
-    
-    <div>
-        <label for="dSlider">Параметр (d):</label>
-        <input type="range" id="dSlider" min="0" max="1" step="0.01" value="0.5">
-        <span id="dValue_span">0.5</span>
-    </div>
-    
-    <div>
-        <label for="gammaZeroSlider">Кут (γ₀):</label>
-        <input type="range" id="gammaZeroSlider" min="0" max="360" step="1" value="60">
-        <span id="gammaZeroValue_span">60</span>
+        <label for="x_max_Slider">Верхній ліміт (x):</label>
+        <input type="range" id="x_max_Slider" min="0" max="3" step="0.01" value="1">
+        <span id="x_max_Value_span">1</span>
     </div>
 
+    <div>
+        <label for="x_min_Slider">Нижній ліміт (x):</label>
+        <input type="range" id="x_min_Slider" min="-3" max="0" step="0.01" value="-1">
+        <span id="x_min_Value_span">-1</span>
+    </div>
+
+    <div>
+        <label for="y_max_Slider">Верхній ліміт (y):</label>
+        <input type="range" id="y_max_Slider" min="0" max="3" step="0.01" value="1">
+        <span id="y_max_Value_span">1</span>
+    </div>
+
+    <div>
+        <label for="y_min_Slider">Нижній ліміт (y):</label>
+        <input type="range" id="y_min_Slider" min="-3" max="0" step="0.01" value="-1">
+        <span id="y_min_Value_span">-1</span>
+    </div>
+    
+    
+    <div>
+        <label for="x_steps_Slider">Кількість кроків (х):</label>
+        <input type="range" id="x_steps_Slider" min="10" max="100" step="1" value="30">
+        <span id="x_steps_Value_span">30</span>
+    </div>
+
+    <div>
+        <label for="y_steps_Slider">Кількість кроків (y):</label>
+        <input type="range" id="y_steps_Slider" min="10" max="100" step="1" value="30">
+        <span id="y_steps_Value_span">30</span>
+    </div>
+    
 
     <div id="canvas-holder">
         <canvas width="1200" height="1200" id="webglcanvas" style="background-color:red"></canvas>
