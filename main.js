@@ -15,58 +15,46 @@ let count_horisontal_steps = 0;
 let r = 0.25;
 let c = 1;
 let d = 0.5;
+
+let x_max = 1;
+let x_min = -1;
+let y_max = 1;
+let y_min = -1;
+let y_steps = 30;
+let x_steps = 30;
+
 let gamma_zero = deg2rad(60);
 
 function deg2rad(angle) {
     return angle * Math.PI / 180;
 }
 
+let keys = ['x_max','x_min','y_max','y_min','y_steps','x_steps'];
 
-// document.getElementById("rSlider").addEventListener("change", updateSurface);
-// document.getElementById("cSlider").addEventListener("change", updateSurface);
-// document.getElementById("dSlider").addEventListener("change", updateSurface);
-// document.getElementById("gammaZeroSlider").addEventListener("change", updateSurface);
+keys.forEach((element) => {
+    console.log(element+"_Slider");
+    document.getElementById(element+"_Slider").addEventListener("change", function() {
+        let rValue = document.getElementById(element+"_Slider").value;
+        document.getElementById(element+"_Value_span").textContent = rValue;
+        updateSurface();
+      });
+      console.log(element+"_Slider");
+})
 
-document.getElementById("rSlider").addEventListener("change", function() {
-    let rValue = document.getElementById("rSlider").value;
-    document.getElementById("rValue_span").textContent = rValue;
-    updateSurface();
-    // Отримано нове значення rValue, можна використовувати його для подальших операцій
-  });
 
-  document.getElementById("cSlider").addEventListener("change", function() {
-    let cSlider = document.getElementById("cSlider").value;
-    document.getElementById("cValue_span").textContent = cSlider;
-    updateSurface();
-    // Отримано нове значення rValue, можна використовувати його для подальших операцій
-  });
-
-  document.getElementById("dSlider").addEventListener("change", function() {
-    const dSlider = document.getElementById("dSlider").value;
-    document.getElementById("dValue_span").textContent = dSlider;
-    updateSurface();
-    // Отримано нове значення rValue, можна використовувати його для подальших операцій
-  });
-
-  document.getElementById("gammaZeroSlider").addEventListener("change", function() {
-    const gammaZeroSlider = document.getElementById("gammaZeroSlider").value;
-    document.getElementById("gammaZeroValue_span").textContent = gammaZeroSlider;
-    updateSurface();
-    // Отримано нове значення rValue, можна використовувати його для подальших операцій
-  });
 
 function updateSurface() {
-    r = parseFloat(document.getElementById("rSlider").value);
-    c = parseFloat(document.getElementById("cSlider").value);
-    d = parseFloat(document.getElementById("dSlider").value);
-    gamma_zero = deg2rad(parseFloat(document.getElementById("gammaZeroSlider").value));
+    x_max = parseFloat(document.getElementById("x_max_Slider").value);
+    x_min = parseFloat(document.getElementById("x_min_Slider").value);
 
-    // Оновіть координати вершин фігури, використовуючи нові значення r, c, d та gamma_zero
+    y_max = parseFloat(document.getElementById("y_max_Slider").value);
+    y_min = parseFloat(document.getElementById("y_min_Slider").value);
 
-    // Перекладіть оновлені координати у буфер даних surface
-    surface.BufferData(CreateSurfaceData(r,c,d,gamma_zero));
+    y_steps = parseFloat(document.getElementById("y_steps_Slider").value);
+    x_steps = parseFloat(document.getElementById("x_steps_Slider").value);
 
-    // Викликайте функцію draw() для відображення оновленої фігури
+    surface.BufferData(CreateSurfaceData(x_max,x_min,y_max,y_min,x_steps,y_steps));
+
     draw();
 }
 // Constructor
@@ -91,6 +79,7 @@ function Model(name) {
 
         for( let i=0; i < count_horisontal; i+=count_horisontal_steps){
             gl.drawArrays(gl.LINE_STRIP, i, count_horisontal_steps);
+            
         }
         for( let i=count_horisontal; i < this.count; i+=count_vertical_steps){
             gl.drawArrays(gl.LINE_STRIP, i, count_vertical_steps);
@@ -150,7 +139,7 @@ function draw() {
     surface.Draw();
 }
 
-function CreateSurfaceData(r,c,d,gamma_zero)
+function CreateSurfaceData(x_max,x_min,y_max,y_min,x_steps,y_steps)
 {
     count_vertical = 0;
     count_horisontal = 0;
@@ -158,52 +147,33 @@ function CreateSurfaceData(r,c,d,gamma_zero)
 
     let vertexList = [];
 
-    let x = function(t, alpha, alpha_zero) {
-        return r * Math.cos(alpha) 
-        - (r * (alpha_zero - alpha) 
-            + t * Math.cos(gamma_zero) 
-            - c * Math.sin(deg2rad(d * t)) * Math.sin(gamma_zero)) 
-        * Math.sin(alpha)
-      };
+    let shoe = function(a,b){
+        return (a*a*a)/3-(b*b)/2;
+    }
 
-    let y = function(t, alpha, alpha_zero) {
-        return r * Math.sin(alpha) 
-        + (r * (alpha_zero - alpha) 
-            + t * Math.cos(gamma_zero) 
-            - c * Math.sin(deg2rad(d * t)) * Math.sin(gamma_zero)) 
-        * Math.cos(alpha)
-      };  
-
-    let z = function(t) {
-        return t * Math.sin(gamma_zero) 
-        + c * Math.sin(deg2rad(d * t)) * Math.cos(gamma_zero)
-      };
-
-
-    for(let j = 0; j < t_max + t_max/10; j+=t_max/10){
+    for(let j = x_min; j < x_max + (x_max-x_min)/x_steps; j+=(x_max-x_min)/x_steps){
         count_horisontal_steps = 0;
-        for(let i=0; i<alpha_max + alpha_max/30; i+=alpha_max/30) {
-            vertexList.push( x(j, deg2rad(i), deg2rad(0))
-                        , y(j, deg2rad(i), deg2rad(0))
-                        , z(j)
+        for(let i = y_min; i < y_max + (y_max-y_min)/y_steps; i+=(y_max-y_min)/y_steps) {
+            vertexList.push( i
+                        , j
+                        , shoe(i,j)
             );
             count_horisontal_steps++;
             count_horisontal++;
         }
     }
-
-    for(let i=0; i<alpha_max + alpha_max/30; i+=alpha_max/30) {
+    
+    for(let i = y_min; i < y_max + (y_max-y_min)/y_steps; i+=(y_max-y_min)/y_steps) {
         count_vertical_steps = 0;
-        for(let j = 0; j < t_max+t_max/10; j+=t_max/10){
-            vertexList.push( x(j, deg2rad(i), deg2rad(0))
-                        , y(j, deg2rad(i), deg2rad(0))
-                        , z(j)
+        for(let j = x_min; j < x_max + (x_max-x_min)/x_steps; j+=(x_max-x_min)/x_steps){
+            vertexList.push( i
+                        , j
+                        , shoe(i,j)
             );
             count_vertical_steps++;
             count_vertical++;
         }
     }
-
 
     return vertexList;
 }
@@ -221,7 +191,7 @@ function initGL() {
     shProgram.iColor                     = gl.getUniformLocation(prog, "color");
 
     surface = new Model('Surface');
-    surface.BufferData(CreateSurfaceData(r,c,d,gamma_zero));
+    surface.BufferData(CreateSurfaceData(x_max,x_min,y_max,y_min,x_steps,y_steps));
     
     gl.enable(gl.DEPTH_TEST);
 }
