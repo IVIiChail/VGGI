@@ -5,14 +5,16 @@ const vertexShaderSource = `
 attribute vec3 vertex;
 attribute vec3 normal;
 uniform mat4 ModelViewProjectionMatrix;
+uniform mat4 TranslationMatrix;
 uniform mat4 NormalMatrix;
 varying vec3 varColor;
+uniform bool lighting;
+uniform vec3 lightPos;
 
 void main() {
     vec4 vertPos4 = ModelViewProjectionMatrix * vec4(vertex, 1.0);
     vec3 vertPos = vec3(vertPos4) / vertPos4.w;
     vec4 norm = NormalMatrix*vec4(normal,1.0);
-    vec3 lightPos = vec3(1);
     vec3 N = normalize(vec3(norm));
     vec3 L = normalize(lightPos - vertPos);
     // Lambert's cosine law
@@ -32,6 +34,9 @@ void main() {
                 lambertian * diffuseColor +
                 specular * specularColor);
     gl_Position = vertPos4;
+    if(lighting){
+        gl_Position = TranslationMatrix*vertPos4;
+    }
 }`;
 
 
@@ -45,6 +50,10 @@ const fragmentShaderSource = `
 varying vec3 varColor;
 
 uniform vec4 color;
+uniform bool lighting;
 void main() {
     gl_FragColor = vec4(varColor,1.0);
+    if(lighting){
+         gl_FragColor = vec4(1.0);
+    }
 }`;

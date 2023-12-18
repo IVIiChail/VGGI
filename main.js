@@ -1,7 +1,7 @@
 'use strict';
 
 let gl;                         // The webgl context.
-let surface;                    // A surface model
+let surface, lighting;                    // A surface model
 let shProgram;                  // A shader program
 let spaceball;                  // A SimpleRotator object that lets the user rotate the view by mouse.
 
@@ -146,7 +146,19 @@ function draw() {
     /* Draw the six faces of a cube, with different colors. */
     gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1]);
 
+    gl.uniformMatrix4fv(shProgram.iTranslationMatrix, false, m4.translation(0.5*Math.cos(Date.now() * 0.001), 0.5*Math.sin(Date.now() * 0.001), 0));
+    gl.uniform3fv(shProgram.iLightPosition, [0.5*Math.cos(Date.now() * 0.001), 0.5*Math.sin(Date.now() * 0.001), 0]);
+
+
     surface.Draw();
+    gl.uniform1i(shProgram.iLighting, true);
+    lighting.Draw();
+    gl.uniform1i(shProgram.iLighting, false);
+}
+
+function animate(){
+    draw()
+    window.requestAnimationFrame(animate)
 }
 
 function CreateSurfaceData(x_max, x_min, y_max, y_min, x_steps, y_steps) {
@@ -249,6 +261,42 @@ function CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps) {
     return normalList;
 }
 
+function CreateLightVisData() {
+    let vertexList = [];
+    let normalList = [];
+
+    let u = 0,
+        v = 0,
+        step = 0.1;
+    while (u < Math.PI * 2) {
+        while (v < Math.PI) {
+            let v1 = getSphereVertex(u, v);
+            let v2 = getSphereVertex(u + step, v);
+            let v3 = getSphereVertex(u, v + step);
+            let v4 = getSphereVertex(u + step, v + step);
+            vertexList.push(v1.x, v1.y, v1.z);
+            vertexList.push(v2.x, v2.y, v2.z);
+            vertexList.push(v3.x, v3.y, v3.z);
+            vertexList.push(v3.x, v3.y, v3.z);
+            vertexList.push(v2.x, v2.y, v2.z);
+            vertexList.push(v4.x, v4.y, v4.z);
+            v += step;
+        }
+        v = 0;
+        u += step;
+    }
+    return vertexList;
+}
+
+let radius = 0.05;
+function getSphereVertex(long, lat) {
+    return {
+        x: radius * Math.cos(long) * Math.sin(lat),
+        y: radius * Math.sin(long) * Math.sin(lat),
+        z: radius * Math.cos(lat)
+    }
+}
+
 
 /* Initialize the WebGL context. Called from init() */
 function initGL() {
@@ -261,12 +309,17 @@ function initGL() {
     shProgram.iAttribNormal = gl.getAttribLocation(prog, "normal");
     shProgram.iModelViewProjectionMatrix = gl.getUniformLocation(prog, "ModelViewProjectionMatrix");
     shProgram.iNormalMatrix = gl.getUniformLocation(prog, "NormalMatrix");
+    shProgram.iTranslationMatrix = gl.getUniformLocation(prog, "TranslationMatrix");
     shProgram.iColor = gl.getUniformLocation(prog, "color");
+    shProgram.iLighting = gl.getUniformLocation(prog, "lighting");
+    shProgram.iLightPosition = gl.getUniformLocation(prog, "lightPos");
 
     surface = new Model('Surface');
     surface.BufferData(CreateSurfaceData(x_max, x_min, y_max, y_min, x_steps, y_steps),
         CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps)
     );
+    lighting = new Model()
+    lighting.BufferData(CreateLightVisData(), CreateLightVisData())
 
     gl.enable(gl.DEPTH_TEST);
 }
@@ -333,4 +386,5 @@ function init() {
     spaceball = new TrackballRotator(canvas, draw, 0);
 
     draw();
+    animate();
 }
