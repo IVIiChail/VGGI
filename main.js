@@ -25,11 +25,13 @@ let x_steps = 30;
 
 let gamma_zero = deg2rad(60);
 
+let pointPos = [0.0, 0.0]
+
 function deg2rad(angle) {
     return angle * Math.PI / 180;
 }
 
-let keys = ['x_max', 'x_min', 'y_max', 'y_min', 'y_steps', 'x_steps'];
+let keys = ['x_max', 'x_min', 'y_max', 'y_min', 'y_steps', 'x_steps', 'scale'];
 
 keys.forEach((element) => {
     console.log(element + "_Slider");
@@ -54,7 +56,8 @@ function updateSurface() {
     x_steps = parseFloat(document.getElementById("x_steps_Slider").value);
 
     surface.BufferData(CreateSurfaceData(x_max, x_min, y_max, y_min, x_steps, y_steps),
-        CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps)
+        CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps),
+        CreateTextureData(x_max, x_min, y_max, y_min, x_steps, y_steps)
     );
 
     draw();
@@ -64,15 +67,19 @@ function Model(name) {
     this.name = name;
     this.iVertexBuffer = gl.createBuffer();
     this.iNormalBuffer = gl.createBuffer();
+    this.iTextureBuffer = gl.createBuffer();
     this.count = 0;
 
-    this.BufferData = function (vertices, normals) {
+    this.BufferData = function (vertices, normals, textures) {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STREAM_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textures), gl.STREAM_DRAW);
 
         this.count = vertices.length / 3;
     }
@@ -86,6 +93,10 @@ function Model(name) {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
         gl.vertexAttribPointer(shProgram.iAttribNormal, 3, gl.FLOAT, true, 0, 0);
         gl.enableVertexAttribArray(shProgram.iAttribNormal);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer);
+        gl.vertexAttribPointer(shProgram.iAttribTexture, 2, gl.FLOAT, true, 0, 0);
+        gl.enableVertexAttribArray(shProgram.iAttribTexture);
 
         gl.drawArrays(gl.TRIANGLES, 0, this.count);
     }
@@ -146,17 +157,25 @@ function draw() {
     /* Draw the six faces of a cube, with different colors. */
     gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1]);
 
-    gl.uniformMatrix4fv(shProgram.iTranslationMatrix, false, m4.translation(0.5*Math.cos(Date.now() * 0.001), 0.5*Math.sin(Date.now() * 0.001), 0));
-    gl.uniform3fv(shProgram.iLightPosition, [0.5*Math.cos(Date.now() * 0.001), 0.5*Math.sin(Date.now() * 0.001), 0]);
+    let shoe = function (a, b) {
+        return (a * a * a) / 3 - (b * b) / 2;
+    }
+    gl.uniformMatrix4fv(shProgram.iTranslationMatrix, false, m4.translation(...pointPos, shoe(...pointPos)));
+    gl.uniform3fv(shProgram.iLightPosition, [0.5 * Math.cos(Date.now() * 0.001), 0.5 * Math.sin(Date.now() * 0.001), 0]);
+    gl.uniform2fv(shProgram.iPointPos, [map(pointPos[0],x_min,x_max,0,1),map(pointPos[1],y_min,y_max,0,1)]);
+    gl.uniform1f(shProgram.iScale, parseFloat(document.getElementById("scale_Slider").value));
+    gl.uniform3fv(shProgram.iPointTranslation, [...pointPos, shoe(...pointPos)])
+    // console.log(...pointPos,shoe(...pointPos))
 
 
     surface.Draw();
+    gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, m4.multiply(modelViewProjection, m4.translation(...pointPos, shoe(...pointPos))));
     gl.uniform1i(shProgram.iLighting, true);
     lighting.Draw();
     gl.uniform1i(shProgram.iLighting, false);
 }
 
-function animate(){
+function animate() {
     draw()
     window.requestAnimationFrame(animate)
 }
@@ -257,13 +276,12 @@ function CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps) {
             count_horisontal++;
         }
     }
-    console.log(normalList)
+    console.log(normalList.length)
     return normalList;
 }
 
 function CreateLightVisData() {
     let vertexList = [];
-    let normalList = [];
 
     let u = 0,
         v = 0,
@@ -295,6 +313,34 @@ function getSphereVertex(long, lat) {
         y: radius * Math.sin(long) * Math.sin(lat),
         z: radius * Math.cos(lat)
     }
+
+}
+
+function CreateTextureData(x_max, x_min, y_max, y_min, x_steps, y_steps) {
+    count_vertical = 0;
+    count_horisontal = 0;
+
+    let textureList = [];
+    for (let j = x_min; j < x_max + (x_max - x_min) / x_steps; j += (x_max - x_min) / x_steps) {
+        count_horisontal_steps = 0;
+        for (let i = y_min; i < y_max + (y_max - y_min) / y_steps; i += (y_max - y_min) / y_steps) {
+            textureList.push(map(i, y_min, y_max, 0, 1), map(j, x_min, x_max, 0, 1))
+            textureList.push(map(i + (y_max - y_min) / y_steps, y_min, y_max, 0, 1), map(j, x_min, x_max, 0, 1))
+            textureList.push(map(i, y_min, y_max, 0, 1), map(j + (x_max - x_min) / x_steps, x_min, x_max, 0, 1))
+            textureList.push(map(i, y_min, y_max, 0, 1), map(j + (x_max - x_min) / x_steps, x_min, x_max, 0, 1))
+            textureList.push(map(i + (y_max - y_min) / y_steps, y_min, y_max, 0, 1), map(j, x_min, x_max, 0, 1))
+            textureList.push(map(i + (y_max - y_min) / y_steps, y_min, y_max, 0, 1), map(j + (x_max - x_min) / x_steps, x_min, x_max, 0, 1))
+            count_horisontal_steps++;
+            count_horisontal++;
+        }
+    }
+    console.log(textureList.length)
+    return textureList;
+}
+
+function map(value, a, b, c, d) {
+    value = (value - a) / (b - a);
+    return c + value * (d - c);
 }
 
 
@@ -307,19 +353,27 @@ function initGL() {
 
     shProgram.iAttribVertex = gl.getAttribLocation(prog, "vertex");
     shProgram.iAttribNormal = gl.getAttribLocation(prog, "normal");
+    shProgram.iAttribTexture = gl.getAttribLocation(prog, "texture");
     shProgram.iModelViewProjectionMatrix = gl.getUniformLocation(prog, "ModelViewProjectionMatrix");
     shProgram.iNormalMatrix = gl.getUniformLocation(prog, "NormalMatrix");
     shProgram.iTranslationMatrix = gl.getUniformLocation(prog, "TranslationMatrix");
     shProgram.iColor = gl.getUniformLocation(prog, "color");
     shProgram.iLighting = gl.getUniformLocation(prog, "lighting");
     shProgram.iLightPosition = gl.getUniformLocation(prog, "lightPos");
+    shProgram.iTMU = gl.getUniformLocation(prog, 'tmu');
+    shProgram.iScale = gl.getUniformLocation(prog, 'scaleFactor');
+    shProgram.iPointPos = gl.getUniformLocation(prog, 'pointPos');
+    shProgram.iPointTranslation = gl.getUniformLocation(prog, 'pointTranslation');
+
+    LoadTexture();
 
     surface = new Model('Surface');
     surface.BufferData(CreateSurfaceData(x_max, x_min, y_max, y_min, x_steps, y_steps),
-        CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps)
+        CreateNormalData(x_max, x_min, y_max, y_min, x_steps, y_steps),
+        CreateTextureData(x_max, x_min, y_max, y_min, x_steps, y_steps)
     );
     lighting = new Model()
-    lighting.BufferData(CreateLightVisData(), CreateLightVisData())
+    lighting.BufferData(CreateLightVisData(), CreateLightVisData(), CreateLightVisData())
 
     gl.enable(gl.DEPTH_TEST);
 }
@@ -387,4 +441,45 @@ function init() {
 
     draw();
     animate();
+}
+
+function LoadTexture() {
+    let texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    const image = new Image();
+    image.crossOrigin = 'anonymus';
+    image.src = "https://github.com/IVIiChail/VGGI/tree/rgr/screenshots/tree.jpeg";
+    image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            image
+        );
+        console.log("imageLoaded")
+        draw()
+    }
+}
+
+window.onkeydown = (e) => {
+    // console.log(e.keyCode)
+    if (e.keyCode == 87) { //w
+        pointPos[0] = Math.min(pointPos[0] + (x_max - x_min) / x_steps, x_max);
+    }
+    else if (e.keyCode == 65) { //a
+        pointPos[1] = Math.max(pointPos[1] - (y_max - y_min) / y_steps, y_min);
+    }
+    else if (e.keyCode == 83) { //s
+        pointPos[0] = Math.max(pointPos[0] - (x_max - x_min) / x_steps, x_min);
+    }
+    else if (e.keyCode == 68) { //d
+        pointPos[1] = Math.min(pointPos[1] + (y_max - y_min) / y_steps, y_max);
+    }
+    draw();
 }
