@@ -451,7 +451,7 @@ function LoadTexture() {
 
     const image = new Image();
     image.crossOrigin = 'anonymus';
-    image.src = "https://github.com/IVIiChail/VGGI/tree/rgr/screenshots/tree.jpeg";
+    image.src = "https://raw.githubusercontent.com/IVIiChail/VGGI/main/screenshots/tree.jpg";
     image.onload = () => {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(
